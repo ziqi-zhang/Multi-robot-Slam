@@ -28,7 +28,11 @@ SOURCES += \
 	./Processor/Line/VisualizationMono/Edit/VisualizationMono_Processor_Line_PrivFunc.cpp	\
 	./Processor/Line/VisualizationMono/NoEdit/VisualizationMono_Processor_Line_PrivCoreFunc.cpp	\
 	./Processor/Core/ProcessorMulti/Edit/ProcessorMulti_Processor_Core_PrivFunc.cpp	\
-	./Processor/Core/ProcessorMulti/NoEdit/ProcessorMulti_Processor_Core_PrivCoreFunc.cpp	
+	./Processor/Core/ProcessorMulti/NoEdit/ProcessorMulti_Processor_Core_PrivCoreFunc.cpp \	
+    ./Communication/host.cpp \
+    ./Communication/network.cpp \
+    ./Communication/tcpclient.cpp \
+    ./Communication/tcpserver.cpp
 
 HEADERS += \
 	./Sensor/xtion/SensorTimer/Edit/SensorTimer_Sensor_xtion_ParamsData.h	\
@@ -90,5 +94,10 @@ HEADERS += \
 	./Processor/Core/ProcessorMulti/Edit/ProcessorMulti_Processor_Core_ParamsData.h	\
 	./Processor/Core/ProcessorMulti/Edit/ProcessorMulti_Processor_Core_Vars.h	\
 	./Processor/Core/ProcessorMulti/NoEdit/ProcessorMulti_Processor_Core_PrivFunc.h	\
-	./Processor/Core/ProcessorMulti/NoEdit/ProcessorMulti_Processor_Core_PrivCoreFunc.h	
+	./Processor/Core/ProcessorMulti/NoEdit/ProcessorMulti_Processor_Core_PrivCoreFunc.h \	
+    ./Communication/host.h \
+    ./Communication/network.h \
+    ./Communication/tcpclient.h \
+    ./Communication/tcpserver.h \
+    ./Communication/Tcp.h
 

@@ -22,6 +22,7 @@
 
 
 #include "ProcessorMulti_Processor_Core_ParamsData.h"
+#include "Communication/tcpserver.h"
 
 //The Vars is defined as below
 /*! \class ProcessorMulti_Processor_Core_Vars 
@@ -37,9 +38,13 @@ public:
 		\details ****Please add details below****
 
 	*/
+    TcpServer* server;
+    Network* network;
 	ProcessorMulti_Processor_Core_Vars() 
 	{
-		
+        //std::cout<<"Build processor multi processor core vars"<<std::endl;
+        network = new Network();
+        server = new TcpServer(network);
 	}
 	/*! \fn ~ProcessorMulti_Processor_Core_Vars()
 		\brief The destructor of ProcessorMulti_Processor_Core_Vars. [required]

@@ -1,6 +1,9 @@
 //You need to program this file.
 
 #include "../NoEdit/ProcessorMulti_Processor_Core_PrivFunc.h"
+#include "Communication/tcpclient.h"
+
+
 
 //*******************Please add static libraries in .pro file*******************
 //e.g. unix:LIBS += ... or win32:LIBS += ...
@@ -104,7 +107,10 @@ bool DECOFUNC(processMultiInputData)(void * paramsPtr, void * varsPtr, QVector<Q
 
 
 
-    std::cout <<"fuck"<<std::endl;
+    //std::cout <<"aha"<<std::endl;
+    Network network;
+    TcpClient client(&network);
+    client.SendPos(0.2, 0.3);
 	/*======Please Program below======*/
 	/*
 	Step 1: process inputdata_index, then store it into outputdata.

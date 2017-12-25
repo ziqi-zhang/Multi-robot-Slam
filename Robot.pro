@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += widgets opengl xml serialport
+QT       += widgets opengl xml serialport network
 
 TARGET = Robot
 TEMPLATE = lib
@@ -35,3 +35,4 @@ INCLUDEPATH += /home/rsys/Documents/NiTE-2.0.0/Include
 
 
 include(RobotSDK_Main.pri)
+#include(Robot.pri)
