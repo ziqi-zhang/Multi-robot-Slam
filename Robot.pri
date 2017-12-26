@@ -33,10 +33,7 @@ SOURCES += \
     ./Communication/network.cpp \
     ./Communication/tcpclient.cpp \
     ./Communication/tcpserver.cpp \
-    Communication/host.cpp \
-    Communication/network.cpp \
-    Communication/tcpclient.cpp \
-    Communication/tcpserver.cpp
+
 
 HEADERS += \
 	./Sensor/xtion/SensorTimer/Edit/SensorTimer_Sensor_xtion_ParamsData.h	\
@@ -104,10 +101,5 @@ HEADERS += \
     ./Communication/tcpclient.h \
     ./Communication/tcpserver.h \
     ./Communication/Tcp.h \
-    Communication/host.h \
-    Communication/network.h \
-    Communication/Tcp.h \
-    Communication/tcpclient.h \
-    Communication/tcpserver.h
 
 
