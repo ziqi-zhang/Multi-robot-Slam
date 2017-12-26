@@ -27,7 +27,7 @@ void TcpClient::SendPos(float x, float y){
     socket->write(message);
     socket->flush();
     //std::cout<<"sender "<<socket->bytesToWrite();
-    std::cout<<"Send pose to ";
+    std::cout<<"1Send pose to ";
     if( self_num == mini0_num )
         std::cout<<"1"<<std::endl;
     else

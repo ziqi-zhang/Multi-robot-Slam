@@ -161,10 +161,6 @@ bool DECOFUNC(processMultiInputData)(void * paramsPtr, void * varsPtr, QVector<Q
 
 
 
-    //std::cout <<"aha"<<std::endl;
-
-
-
 
 	/*======Please Program below======*/
 	/*
@@ -178,10 +174,13 @@ bool DECOFUNC(processMultiInputData)(void * paramsPtr, void * varsPtr, QVector<Q
     long long timeStamp = inputdata_1.front()->timestamp;
     float x = inputdata_0.front()->x;
     float y = inputdata_0.front()->y;
-    calFromDist(inputdata_1, speed, steer,vars);
     Network network;
     TcpClient client(&network);
     client.SendMessageToHost(x, y, inputdata_1.front());
+    calFromDist(inputdata_1, speed, steer,vars);
+
+
+
     //--------------------------------------------
     if (speed > 180) speed = 180;
     if (speed < -180) speed = -180;
