@@ -111,8 +111,6 @@ bool DECOFUNC(processMultiInputData)(void * paramsPtr, void * varsPtr, QVector<Q
     Network network;
     TcpClient client(&network);
     float x = 0.3, y = 0.3;
-    long long timestamp;
-
     client.SendMessageToHost(x, y, inputdata_1.front());
 	/*======Please Program below======*/
 	/*

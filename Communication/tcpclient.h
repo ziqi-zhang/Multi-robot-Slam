@@ -14,7 +14,7 @@ public:
     explicit TcpClient(Network* network_);
     ~TcpClient();
     void SendPos(float x, float y);
-    void SendLidarMessage(SensorTimer_Sensor_URG_Data* lidarData);
+    void SendMessageToHost(float x, float y, SensorTimer_Sensor_URG_Data* lidarData);
 
 private:
     QTcpSocket* socket, *socket_host;

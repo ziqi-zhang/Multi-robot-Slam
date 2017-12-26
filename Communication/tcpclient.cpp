@@ -37,7 +37,7 @@ void TcpClient::SendPos(float x, float y){
 
 }
 
-void TcpClient::SendLidarMessage(SensorTimer_Sensor_URG_Data* lidarData){
+void TcpClient::SendMessageToHost(float x, float y, SensorTimer_Sensor_URG_Data* lidarData){
     if( self_num==mini0_num )
         socket_host->connectToHost(*(network->Host), HOSTPORT0);
     else
@@ -47,13 +47,17 @@ void TcpClient::SendLidarMessage(SensorTimer_Sensor_URG_Data* lidarData){
     QByteArray message;
     QDataStream out(&message, QIODevice::WriteOnly);
     out<<message_type;
+    long long timestamp=lidarData->timestamp;
+    out<<timestamp;
     out<<self_num;
     int size = lidarData->datasize;
     out<<size;
+    out<<x<<y;
     for( int i=0; i<size; i++ )
         out<<lidarData->data[i];
     socket_host->write(message);
     socket_host->flush();
+    printf("Send to host %d bytes\n", message.size());
     socket_host->disconnectFromHost();
 }
 
