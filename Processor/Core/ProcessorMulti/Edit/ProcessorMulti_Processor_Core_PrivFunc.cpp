@@ -118,7 +118,7 @@ void calFromDist(QVector<SensorTimer_Sensor_URG_Data *> &inputdata_1,
     speed = 90;           // [-180, 180]
 
 
-    qDebug() << speed << steer << ave_dist;
+    //qDebug() << speed << steer << ave_dist;
     // Show RGB image && compass
 //    double ori = - ((double)steer / 400.0) * (M_PI / 2.0);
 //    cv::Mat img;
@@ -172,11 +172,18 @@ bool DECOFUNC(processMultiInputData)(void * paramsPtr, void * varsPtr, QVector<Q
     short steer = 0;
     short speed = 200;
     long long timeStamp = inputdata_1.front()->timestamp;
+    qDebug() << " pos = " << inputdata_0.front()->x <<"  "<< inputdata_0.front()->y;
     float x = inputdata_0.front()->x;
     float y = inputdata_0.front()->y;
+    float ori = inputdata_0.front()->orientation;
+    if( vars->cnt>=3 ){
+        vars->cnt =0 ;
     Network network;
     TcpClient client(&network);
-    client.SendMessageToHost(x, y, inputdata_1.front());
+    client.SendMessageToHost(x, y, ori, inputdata_1.front());
+    }
+    else
+        vars->cnt++;
     calFromDist(inputdata_1, speed, steer,vars);
 
 

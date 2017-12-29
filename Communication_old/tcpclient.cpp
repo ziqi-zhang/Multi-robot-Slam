@@ -6,7 +6,6 @@ TcpClient::TcpClient(Network* network_)
     socket_host = new QTcpSocket();
     network = network_;
     self_num = network->self_num;
-    cnt = 0;
 }
 
 TcpClient::~TcpClient(){
@@ -39,7 +38,6 @@ void TcpClient::SendPos(float x, float y){
 }
 
 void TcpClient::SendMessageToHost(float x, float y, float ori, SensorTimer_Sensor_URG_Data* lidarData){
-
     if( self_num==mini0_num )
         socket_host->connectToHost(*(network->Host), HOSTPORT0);
     else
@@ -56,7 +54,7 @@ void TcpClient::SendMessageToHost(float x, float y, float ori, SensorTimer_Senso
     int size = lidarData->datasize;
     out<<size;
     out<<x<<y<<ori;
-    for( int i=0; i<size; i++ )
+    for( int i=0; i<size*2/3; i++ )
         out<<lidarData->data[i];
     out.device()->seek(0);
     out << (quint16)(message.size() - sizeof(quint16));

@@ -7,9 +7,8 @@ Network::Network(QObject *parent) :
 {
     QFile file("/home/rsys/SDK/RobotSDK/ModuleDev/Robot/network.xml");
     if( !file.open(QFile::ReadOnly|QFile::Text) ){
-        //printf("Open xml file failed:");
-        qDebug()<<"Open xml file failed";
-        qDebug()<<qPrintable(file.errorString());
+        printf("Open xml file failed:");
+        std::cout<<qPrintable(file.errorString())<<std::endl;
     }
     QXmlStreamReader reader(&file);
     reader.readNext();

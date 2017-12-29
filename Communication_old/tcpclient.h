@@ -5,7 +5,7 @@
 #include <QtNetwork>
 #include <QTcpSocket>
 #include "Tcp.h"
-#include "SensorTimer_Sensor_URG_ParamsData.h"
+#include "Sensor/URG/SensorTimer/Edit/SensorTimer_Sensor_URG_ParamsData.h"
 
 class TcpClient : public QObject
 {
@@ -15,7 +15,6 @@ public:
     ~TcpClient();
     void SendPos(float x, float y);
     void SendMessageToHost(float x, float y, float ori, SensorTimer_Sensor_URG_Data* lidarData);
-    int cnt;
 
 private:
     QTcpSocket* socket, *socket_host;

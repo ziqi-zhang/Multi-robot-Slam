@@ -43,15 +43,17 @@ void TcpServer::ReadData(){
         float x, y;
         in>>x>>y;
         //printf("Receive position from Mini");
-
+        std::cout<<"Receive position from Mini";
         if( self_num==mini0_num ){
-            qDebug()<<"Receive position from Mini1 "<<"("<<x<<","<<y<<")";
+            printf("1");
+            std::cout<<"1";
         }
         else{
             printf("0");
-            qDebug()<<"Receive position from Mini0 "<<"("<<x<<","<<y<<")";
+            std::cout<<"0";
         }
-
+        printf(" (%f,%f)\n", x, y);
+        std::cout<<" ("<<x<<","<<y<<")"<<std::endl;
     }
 
 }

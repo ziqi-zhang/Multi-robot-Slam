@@ -46,6 +46,7 @@ public:
         network = new Network();
         server = new TcpServer(network);
         bef_count = 0;
+        cnt=0;
 	}
 	/*! \fn ~ProcessorMulti_Processor_Core_Vars()
 		\brief The destructor of ProcessorMulti_Processor_Core_Vars. [required]
@@ -60,6 +61,7 @@ public:
 	//*******************Please add variables below*******************
     double Error_bef[10];
     int bef_count;
+    int cnt;
 };
 
 /*! @}*/ 
