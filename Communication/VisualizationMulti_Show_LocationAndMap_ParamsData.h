@@ -54,10 +54,10 @@ public:
 	*/
 	VisualizationMulti_Show_LocationAndMap_Params() 
 	{
-        mapHeight=600;
+        mapHeight=640;
         mapWidth=640;
         mapGrid=20;
-        mapRes=0.5;
+        mapRes=20;
         ZeroX=-360;
         ZeroY=-500;
 	}

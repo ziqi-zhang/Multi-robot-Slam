@@ -1,4 +1,4 @@
-#include "Communication/network.h"
+#include "network.h"
 #include <QFile>
 #include <iostream>
 

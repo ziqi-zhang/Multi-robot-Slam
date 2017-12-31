@@ -46,10 +46,13 @@ public:
         nearThres=3;
         farThres=80;
         isReverse=1;
-        aL=4.2;
-        xL=0.28;
-        yL=2.6;
-        unit = 10;
+        //aL=4.2;
+        //xL=0.28;
+        //yL=2.6;
+        aL = 4.2;
+        xL = 0.028;
+        yL = 0.26;
+        unit = 100;
         res = 0.5;
 	}
 	/*! \fn ~Simulator_Sensor_laser_Params()

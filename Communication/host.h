@@ -4,8 +4,8 @@
 #include <QObject>
 #include <QTcpServer>
 #include "Tcp.h"
-#include "Communication/Simulator_Sensor_laser_ParamsData.h"
-#include "Communication/VisualizationMulti_Show_LocationAndMap_ParamsData.h"
+#include "Simulator_Sensor_laser_ParamsData.h"
+#include "VisualizationMulti_Show_LocationAndMap_ParamsData.h"
 #include "Bresenham.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -40,7 +40,7 @@ private:
     Simulator_Sensor_laser_Params laser_params;
     //Simulator_Sensor_GPS_Params GPS_params;
     VisualizationMulti_Show_LocationAndMap_Params mapping_params;
-    cv::Mat traj_map_img, map_img;
+    cv::Mat traj_map_img, map_img, lidar_img;
     float lastX0, lastY0, lastX1, lastY1, biasX, biasY;
     quint16 block0_size, block1_size;
     int height, width;

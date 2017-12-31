@@ -1,4 +1,4 @@
-#include "./Communication/tcpserver.h"
+#include "tcpserver.h"
 #include <iostream>
 
 TcpServer::TcpServer(Network* network_)

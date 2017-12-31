@@ -16,8 +16,9 @@ Host::Host(QObject *parent, Network* network_) :
     width = 640;
     traj_map_img = cv::Mat::zeros(height, width, CV_8UC3);
     map_img = cv::Mat::zeros(height, width, CV_8UC3);
+    lidar_img = cv::Mat::zeros(height, width, CV_8UC1);
     lastX0 = 0;lastY0 = 0;lastX1 = 0;lastY1 = 0;
-    biasX = width/2;biasY = height/2;
+    biasX = width/2;biasY = 0;
     init = false;
     block0_size = 0;
     block1_size = 0;
@@ -55,9 +56,11 @@ void Host::DisConnection(){
 void Host::UpdateMap(const float x, const float y, const float orien,
                      const int size, const quint32 from_num, const short* data){
     /*for( int i=0; i<size; i++ )
-        std::cout<<data[i]<<" ";
+        std::cout<<data[i]/laser_params.unit<<" ";
     std::cout<<std::endl;*/
     //qDebug()<<"data size is "<<size;
+    lidar_img.setTo(125);
+    int cnt = 0;
     for( int i=0; i<size; i++ ){
         double gx, gy;//激光点在全局坐标系中的位置 单位m
         double rx, ry;//激光点在机器人坐标系中的位置 单位m
@@ -73,35 +76,48 @@ void Host::UpdateMap(const float x, const float y, const float orien,
         lx = dis*cos(ang);
         ly = dis*sin(ang);
         //qDebug()<<"lx "<<lx<<" ly "<<ly;
+        //std::cout<<"("<<lx<<","<<ly<<")->";
         if(laser_params.isReverse)
             lx = -lx;
+        //std::cout<<"("<<lx<<","<<ly<<")->";
         double laser_al_rad = laser_params.aL * PI / 180;
         double laser_xl = laser_params.xL;
         double laser_yl = laser_params.yL;
-        rx= laser_xl - lx*cos(laser_al_rad) + ly*sin(laser_al_rad) ;
-        ry= laser_yl + ly*cos(laser_al_rad) + lx*sin(laser_al_rad) ;
+        ry= laser_xl - lx*cos(laser_al_rad) + ly*sin(laser_al_rad) ;
+        rx= laser_yl + ly*cos(laser_al_rad) + lx*sin(laser_al_rad) ;
+        //std::cout<<laser_al_rad<<"->";
+        //std::cout<<"("<<rx<<","<<ry<<")->";
         //qDebug()<<"rx "<<rx<<" ry "<<ry;
+
 
         gx =x + ry*cos(orien) - rx*sin(orien);
         gy =y + ry*sin(orien) + rx*cos(orien);
         //qDebug()<<"gx "<<gx<<" gy "<<gy;
+        //std::cout<<orien<<"->";
+
 
         int mapx, mapy;
-        mapx = gx + biasX;
-        mapy = gy + biasY;
+        mapx = gx*mapping_params.mapRes + biasX;
+        mapy = gy*mapping_params.mapRes + biasY;
         //qDebug()<<"mapx "<<mapx<<" mapy "<<mapy;
-        std::cout<<"("<<gx<<","<<gy<<") ";
+        //std::cout<<"("<<gx<<","<<gy<<") ";
 
         //cv::waitKey(500);
         int location_mapx,location_mapy;
         //location_mapx=x/mapping_params.mapRes + biasX;
         //location_mapy=y/mapping_params.mapRes + biasY;
-        location_mapx = x + biasX;
-        location_mapy = y + biasY;
+        location_mapx = x*(float)mapping_params.mapRes + biasX;
+        location_mapy = y*(float)mapping_params.mapRes + biasY;
         std::vector<Location> locationVec;
         Location startPos(location_mapx, location_mapy);
         Location endPos(mapx,mapy);
         CalcShortestDistance(startPos, endPos, locationVec);
+        if( cnt<10 ){
+            std::cout<<"("<<x<<","<<y<<")->("<<gx<<","<<gy<<")--->";
+            std::cout<<"("<<location_mapx<<","<<location_mapy<<")&"
+                       <<"("<<mapx<<","<<mapy<<")"<<"     ";
+            cnt++;
+        }
 
 
         double upthres=300;
@@ -111,25 +127,28 @@ void Host::UpdateMap(const float x, const float y, const float orien,
             //(*c).x *= 60;(*c).y *= 60;
             if((*c).x >= 0 && (*c).x < mapping_params.mapWidth && (*c).y >= 0 && (*c).y < mapping_params.mapHeight){
                     if(c != locationVec.end()-1 ){
-                        map[(*c).y][(*c).x] -= 1;
-                        if( map[(*c).y][(*c).x] < -300 )
-                            map[(*c).y][(*c).x] = -300;
+                        map[(*c).x][(*c).y] -= 0.07;
+                        lidar_img.at<uchar>((*c).x, (*c).y) = 0;
+                        if( map[(*c).x][(*c).y] < -300 )
+                            map[(*c).x][(*c).y] = -300;
+
                     }
                     else{
-                        map[(*c).y][(*c).x] += 1;
-                        if( map[(*c).y][(*c).x] > 300 )
-                            map[(*c).y][(*c).x] = 300;
+                        map[(*c).x][(*c).y] += 0.1;
+                        lidar_img.at<uchar>((*c).x, (*c).y) = 255;
+                        if( map[(*c).x][(*c).y] > 300 )
+                            map[(*c).x][(*c).y] = 300;
                     }
             }
         }
     }
     std::cout<<std::endl;
 
-    map_img = traj_map_img.clone();
+
     if(from_num==0){
         cv::Scalar traj_color(255,0,0);
-        cv::line(traj_map_img, cv::Point2f(biasX+lastX0*60, biasY+lastY0*60), cv::Point2f(biasX+x*60, biasY+y*60),
-                 traj_color, 3);
+        cv::line(traj_map_img, cv::Point2f(biasX+lastX0*mapping_params.mapRes, biasY+lastY0*mapping_params.mapRes)
+                 , cv::Point2f(biasX+x*mapping_params.mapRes, biasY+y*mapping_params.mapRes), traj_color, 3);
         lastX0=x;lastY0=y;
     }
     else{
@@ -138,14 +157,22 @@ void Host::UpdateMap(const float x, const float y, const float orien,
                  traj_color, 1);
         lastX1=x;lastY1=y;
     }
+    map_img = traj_map_img.clone();
     for(int i=0; i<height; i++ )
         for(int j=0; j<width; j++ ){
-            int num = map[i][j]*5+125;
-            map_img.at<cv::Vec3b>(j,i) = cv::Vec3b(num,num,num);
+            if(traj_map_img.at<cv::Vec3b>(j,i)==cv::Vec3b(0,0,0)){
+                int num = map[i][j]*2+125;
+                if(num<0)
+                    num = 0;
+                if(num>255)
+                    num = 255;
+                map_img.at<cv::Vec3b>(j,i) = cv::Vec3b(num,num,num);
+            }
         }
     if(from_num==0){
         cv::Scalar traj_color(255,0,0);
-        cv::circle(map_img, cv::Point2f(biasX+lastX0*60, biasY+lastY0*60), 10, traj_color, 6);
+        cv::circle(map_img, cv::Point2f(biasX+lastX0*mapping_params.mapRes, biasY+lastY0*mapping_params.mapRes)
+                   , 10, traj_color, 6);
     }
     else{
         cv::Scalar traj_color(0,255,0);
@@ -153,6 +180,7 @@ void Host::UpdateMap(const float x, const float y, const float orien,
     }
 
     cv::imshow("Map", map_img);
+    cv::imshow("Lidar", lidar_img);
 
     //cv::imshow("map", traj_map_img);
     cv::waitKey(5);
