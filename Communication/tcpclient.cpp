@@ -50,18 +50,19 @@ void TcpClient::SendMessageToHost(float x, float y, float ori, SensorTimer_Senso
     QDataStream out(&message, QIODevice::WriteOnly);
     out<<(quint16)0;
     out<<message_type;
-    long long timestamp=lidarData->timestamp;
+    qint64 timestamp=lidarData->timestamp;
     out<<timestamp;
     out<<self_num;
-    int size = lidarData->datasize;
+    qint32 size = lidarData->datasize;
     out<<size;
     out<<x<<y<<ori;
     for( int i=0; i<size; i++ )
-        out<<lidarData->data[i];
+        out<<qint16(lidarData->data[i]);
     out.device()->seek(0);
     out << (quint16)(message.size() - sizeof(quint16));
     socket_host->write(message);
     socket_host->flush();
+    //socket_host->waitForBytesWritten();
     //printf("Send to host %d bytes\n", message.size());
     std::cout<<"Send to host "<<message.size()<<" bytes "<<"timestamp "<<timestamp
             <<" x "<<x<<" y "<<y<<std::endl;

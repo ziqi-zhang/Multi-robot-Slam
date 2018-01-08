@@ -14,12 +14,15 @@ Host::Host(QObject *parent, Network* network_) :
     connect(server1, SIGNAL(newConnection()), this, SLOT(NewConnection1()));
     height = 640;
     width = 640;
+    lidar_height = 640;
+    lidar_width = 640;
     traj_map_img = cv::Mat::zeros(height, width, CV_8UC3);
     map_img = cv::Mat::zeros(height, width, CV_8UC3);
-    lidar_img = cv::Mat::zeros(height, width, CV_8UC1);
+    lidar_img0 = cv::Mat::zeros(lidar_height, lidar_width, CV_8UC3);
+    lidar_img1 = cv::Mat::zeros(lidar_height, lidar_width, CV_8UC3);
     lastX0 = 0;lastY0 = 0;lastX1 = 0;lastY1 = 0;
-    biasX = width/2;biasY = 0;
-    init = false;
+    biasX = 50;biasY = 50;
+    lidar_biasX = lidar_width/2;lidar_biasY = lidar_height;
     block0_size = 0;
     block1_size = 0;
 
@@ -30,6 +33,14 @@ Host::Host(QObject *parent, Network* network_) :
             map[i][j] = 0;
         }
     }
+
+    drawer = new Drawer();
+    workerThread = new QThread();
+    drawer->moveToThread(workerThread);
+    workerThread->start();
+    connect(workerThread, &QThread::finished, drawer, &QObject::deleteLater);
+    connect(server0, &QTcpServer::newConnection, drawer, &Drawer::doWork);
+
     qDebug()<<"Host constructed";
 }
 
@@ -53,12 +64,20 @@ void Host::DisConnection(){
     qDebug()<<"Disconnected";
 }
 
-void Host::UpdateMap(const float x, const float y, const float orien,
+void Host::UpdateMap(float x, float y, float orien,
                      const int size, const quint32 from_num, const short* data){
     /*for( int i=0; i<size; i++ )
         std::cout<<data[i]/laser_params.unit<<" ";
     std::cout<<std::endl;*/
     //qDebug()<<"data size is "<<size;
+    cv::Mat lidar_img;
+    if( from_num==0 )
+        lidar_img = lidar_img0;
+    else{
+        lidar_img = lidar_img1;
+        float tmp = x;x=y;y=tmp;
+        orien -= 1.57;
+    }
     lidar_img.setTo(125);
     int cnt = 0;
     for( int i=0; i<size; i++ ){
@@ -77,8 +96,8 @@ void Host::UpdateMap(const float x, const float y, const float orien,
         ly = dis*sin(ang);
         //qDebug()<<"lx "<<lx<<" ly "<<ly;
         //std::cout<<"("<<lx<<","<<ly<<")->";
-        if(laser_params.isReverse)
-            lx = -lx;
+        //if(laser_params.isReverse)
+        //    lx = -lx;
         //std::cout<<"("<<lx<<","<<ly<<")->";
         double laser_al_rad = laser_params.aL * PI / 180;
         double laser_xl = laser_params.xL;
@@ -112,39 +131,57 @@ void Host::UpdateMap(const float x, const float y, const float orien,
         Location startPos(location_mapx, location_mapy);
         Location endPos(mapx,mapy);
         CalcShortestDistance(startPos, endPos, locationVec);
-        if( cnt<10 ){
+        /*if( cnt<10 ){
             std::cout<<"("<<x<<","<<y<<")->("<<gx<<","<<gy<<")--->";
             std::cout<<"("<<location_mapx<<","<<location_mapy<<")&"
                        <<"("<<mapx<<","<<mapy<<")"<<"     ";
             cnt++;
-        }
+        }*/
 
 
         double upthres=300;
         double lowthres=-300;
+        int lidar_map_x, lidar_map_y;
         //std::cout <<"get here !"<<std::endl;
+        map_mutex.lock();
         for (std::vector<Location>::iterator c=locationVec.begin();c!=locationVec.end();c++){
             //(*c).x *= 60;(*c).y *= 60;
             if((*c).x >= 0 && (*c).x < mapping_params.mapWidth && (*c).y >= 0 && (*c).y < mapping_params.mapHeight){
                     if(c != locationVec.end()-1 ){
                         map[(*c).x][(*c).y] -= 0.07;
-                        lidar_img.at<uchar>((*c).x, (*c).y) = 0;
-                        if( map[(*c).x][(*c).y] < -300 )
-                            map[(*c).x][(*c).y] = -300;
+                        if( map[(*c).x][(*c).y] < lowthres )
+                            map[(*c).x][(*c).y] = lowthres;
 
                     }
                     else{
                         map[(*c).x][(*c).y] += 0.1;
-                        lidar_img.at<uchar>((*c).x, (*c).y) = 255;
-                        if( map[(*c).x][(*c).y] > 300 )
-                            map[(*c).x][(*c).y] = 300;
+                        if( map[(*c).x][(*c).y] > upthres )
+                            map[(*c).x][(*c).y] = upthres;
                     }
             }
+            if( from_num==0 ){
+                lidar_map_y = (*c).y - location_mapy;
+                lidar_map_x = (*c).x - location_mapx;
+            }
+            if(from_num==1){
+                lidar_map_x = (*c).y - location_mapy;
+                lidar_map_y = (*c).x - location_mapx;
+
+            }
+            lidar_map_x += lidar_biasX;
+            if(lidar_map_x >= 0 && lidar_map_x <= lidar_width
+                    && lidar_map_y >= 0 && lidar_map_y <= lidar_height){
+                if( c != locationVec.end()-1 )
+                    lidar_img.at<uchar>(lidar_map_y, lidar_map_x) = 0;
+                else
+                    lidar_img.at<uchar>(lidar_map_y, lidar_map_x) = 255;
+            }
         }
+        map_mutex.unlock();
     }
-    std::cout<<std::endl;
+    //std::cout<<std::endl;
 
-
+    map_img_mutex.lock();
     if(from_num==0){
         cv::Scalar traj_color(255,0,0);
         cv::line(traj_map_img, cv::Point2f(biasX+lastX0*mapping_params.mapRes, biasY+lastY0*mapping_params.mapRes)
@@ -153,8 +190,8 @@ void Host::UpdateMap(const float x, const float y, const float orien,
     }
     else{
         cv::Scalar traj_color(0,255,0);
-        cv::line(traj_map_img, cv::Point2f(biasX+lastX1, biasY+lastY1), cv::Point2f(biasX+x, biasY+y),
-                 traj_color, 1);
+        cv::line(traj_map_img, cv::Point2f(biasX+lastX1*mapping_params.mapRes, biasY+lastY1*mapping_params.mapRes)
+                 , cv::Point2f(biasX+x*mapping_params.mapRes, biasY+y*mapping_params.mapRes), traj_color, 3);
         lastX1=x;lastY1=y;
     }
     map_img = traj_map_img.clone();
@@ -169,25 +206,23 @@ void Host::UpdateMap(const float x, const float y, const float orien,
                 map_img.at<cv::Vec3b>(j,i) = cv::Vec3b(num,num,num);
             }
         }
-    if(from_num==0){
-        cv::Scalar traj_color(255,0,0);
-        cv::circle(map_img, cv::Point2f(biasX+lastX0*mapping_params.mapRes, biasY+lastY0*mapping_params.mapRes)
-                   , 10, traj_color, 6);
-    }
-    else{
-        cv::Scalar traj_color(0,255,0);
-        cv::circle(map_img, cv::Point2f(biasX+lastX1, biasY+lastY1), 10, traj_color, 2);
-    }
 
-    cv::imshow("Map", map_img);
-    cv::imshow("Lidar", lidar_img);
+    cv::Scalar traj_color(255,0,0);
+    cv::circle(map_img, cv::Point2f(biasX+lastX0*mapping_params.mapRes, biasY+lastY0*mapping_params.mapRes)
+               , 10, traj_color, 6);
+    traj_color = cv::Scalar(0,255,0);
+            cv::circle(map_img, cv::Point2f(biasX+lastX1*mapping_params.mapRes, biasY+lastY1*mapping_params.mapRes)
+               , 10, traj_color, 6);
+    map_img_mutex.unlock();
 
-    //cv::imshow("map", traj_map_img);
-    cv::waitKey(5);
+    //cv::imshow("Map", map_img);
+    //cv::imshow("Lidar", lidar_img);
+    //cv::waitKey(5);
 
 }
 
 void Host::ReadData0(){
+    //qDebug()<<"ReadData bytes available "<<socket0->bytesAvailable();
     QDataStream in(socket0);
     if( block0_size==0 ){
         if( socket0->bytesAvailable() < (int)sizeof(quint16) )
@@ -199,10 +234,10 @@ void Host::ReadData0(){
     }
 
 
-    short data[361];
-    long long timestamp;
+    qint16 data[361];
+    qint64 timestamp;
     quint32 from_num;
-    int size;
+    qint32 size;
     float x, y, orien;
     quint32 message_type;
 
@@ -221,7 +256,7 @@ void Host::ReadData0(){
         }
 
         qDebug()<<"Receive message from "<<from_num<<" message type "<<message_type<<",timestamp "<<timestamp
-               <<", message size is "<<block0_size<<", x "<<x<<", y "<<y
+               <<", message size is "<<block0_size<<", x "<<x<<", y "<<y<<", ori "<<orien
                <<" data size "<<size<<" bytesAvailable "<<socket0->bytesAvailable();
         UpdateMap(x, y, orien, size, from_num, data);
         //delete data;
@@ -235,26 +270,48 @@ void Host::ReadData0(){
 }
 
 void Host::ReadData1(){
-    QByteArray message;
-    short* data;
+    //qDebug()<<"ReadData bytes available "<<socket1->bytesAvailable();
+    QDataStream in(socket1);
+    if( block1_size==0 ){
+        if( socket1->bytesAvailable() < (int)sizeof(quint16) )
+            return;
+        in>>block1_size;
+    }
+    if( socket1->bytesAvailable() < block1_size ){
+        return;
+    }
+
+
+    short data[361];
     long long timestamp;
     quint32 from_num;
     int size;
     float x, y, orien;
     quint32 message_type;
-    message = socket1->readAll();
-    QDataStream in(&message, QIODevice::ReadOnly);
+
+
     in>>message_type;
     if( message_type==1 ){
         in>>timestamp>>from_num>>size>>x>>y>>orien;
-        data = new short[size];
+        if( timestamp<0 ){
+            qDebug()<<"timestamp not positive";
+            block1_size = 0;
+            return;
+        }
+        //data = new short[size];
         for( int i=0; i<size; i++ ){
             in>>data[i];
         }
-    }
 
-    qDebug()<<"Receive message from "<<from_num<<", message size is "
-               <<message.size()<<", x "<<x<<", y "<<y;
-    UpdateMap(x, y, orien, size, from_num, data);
-    delete data;
+        qDebug()<<"Receive message from "<<from_num<<" message type "<<message_type<<",timestamp "<<timestamp
+               <<", message size is "<<block1_size<<", x "<<x<<", y "<<y<<", ori "<<orien
+               <<" data size "<<size<<" bytesAvailable "<<socket1->bytesAvailable();
+        //UpdateMap(x, y, orien, size, from_num, data);
+        //delete data;
+
+    }
+    else{
+        qDebug()<<"Message type not 0";
+    }
+    block1_size = 0;
 }

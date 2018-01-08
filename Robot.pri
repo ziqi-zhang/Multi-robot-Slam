@@ -33,6 +33,7 @@ SOURCES += \
     ./Communication/network.cpp \
     ./Communication/tcpclient.cpp \
     ./Communication/tcpserver.cpp \
+    Communication/drawer.cpp
 
 
 HEADERS += \
@@ -101,5 +102,6 @@ HEADERS += \
     ./Communication/tcpclient.h \
     ./Communication/tcpserver.h \
     ./Communication/Tcp.h \
+    Communication/drawer.h
 
 
