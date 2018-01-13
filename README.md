@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # get the repo
 `git clone https://github.com/RobotCourse/Robot.git Robot`
 
@@ -14,3 +15,7 @@
 
 # finish all
 Now you can compile the codes!Lib for Robot Course.
+=======
+# Multi-robot-Slam
+This is a multi-robot slam system based on RobotSDK and is the project of my course "Introduction to Intelligent Robot"
+>>>>>>> c4337aae449867adfe6853e10e968080f37f8c87
