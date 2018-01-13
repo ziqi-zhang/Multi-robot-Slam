@@ -12,34 +12,20 @@ Host::Host(QObject *parent, Network* network_) :
     server1->listen(QHostAddress::Any, HOSTPORT1);
     connect(server0, SIGNAL(newConnection()), this, SLOT(NewConnection0()));
     connect(server1, SIGNAL(newConnection()), this, SLOT(NewConnection1()));
-    height = 640;
-    width = 640;
-    lidar_height = 640;
-    lidar_width = 640;
-    traj_map_img = cv::Mat::zeros(height, width, CV_8UC3);
-    map_img = cv::Mat::zeros(height, width, CV_8UC3);
-    lidar_img0 = cv::Mat::zeros(lidar_height, lidar_width, CV_8UC3);
-    lidar_img1 = cv::Mat::zeros(lidar_height, lidar_width, CV_8UC3);
-    lastX0 = 0;lastY0 = 0;lastX1 = 0;lastY1 = 0;
-    biasX = 50;biasY = 50;
-    lidar_biasX = lidar_width/2;lidar_biasY = lidar_height;
     block0_size = 0;
     block1_size = 0;
 
-    map = new float*[height];
-    for( int i=0; i<height; i++ ){
-        map[i] = new float[width];
-        for( int j=0; j<width; j++ ){
-            map[i][j] = 0;
-        }
-    }
 
-    drawer = new Drawer();
-    workerThread = new QThread();
-    drawer->moveToThread(workerThread);
+
+
+    map_img = new MapImg();
+    calcu_thread0 = new CalcuThread(map_img, 0);
+    calcu_thread1 = new CalcuThread(map_img, 1);
+    /*workerThread = new QThread();
+    drawer0->moveToThread(workerThread);
     workerThread->start();
-    connect(workerThread, &QThread::finished, drawer, &QObject::deleteLater);
-    connect(server0, &QTcpServer::newConnection, drawer, &Drawer::doWork);
+    connect(workerThread, &QThread::finished, drawer0, &QObject::deleteLater);
+    connect(server0, &QTcpServer::newConnection, drawer0, &Drawer::drawImg);*/
 
     qDebug()<<"Host constructed";
 }
@@ -66,11 +52,8 @@ void Host::DisConnection(){
 
 void Host::UpdateMap(float x, float y, float orien,
                      const int size, const quint32 from_num, const short* data){
-    /*for( int i=0; i<size; i++ )
-        std::cout<<data[i]/laser_params.unit<<" ";
-    std::cout<<std::endl;*/
-    //qDebug()<<"data size is "<<size;
-    cv::Mat lidar_img;
+
+    /*cv::Mat lidar_img;
     if( from_num==0 )
         lidar_img = lidar_img0;
     else{
@@ -78,8 +61,8 @@ void Host::UpdateMap(float x, float y, float orien,
         float tmp = x;x=y;y=tmp;
         orien -= 1.57;
     }
-    lidar_img.setTo(125);
-    int cnt = 0;
+    lidar_img.setTo(125);*/
+    /*int cnt = 0;
     for( int i=0; i<size; i++ ){
         double gx, gy;//激光点在全局坐标系中的位置 单位m
         double rx, ry;//激光点在机器人坐标系中的位置 单位m
@@ -131,12 +114,6 @@ void Host::UpdateMap(float x, float y, float orien,
         Location startPos(location_mapx, location_mapy);
         Location endPos(mapx,mapy);
         CalcShortestDistance(startPos, endPos, locationVec);
-        /*if( cnt<10 ){
-            std::cout<<"("<<x<<","<<y<<")->("<<gx<<","<<gy<<")--->";
-            std::cout<<"("<<location_mapx<<","<<location_mapy<<")&"
-                       <<"("<<mapx<<","<<mapy<<")"<<"     ";
-            cnt++;
-        }*/
 
 
         double upthres=300;
@@ -179,7 +156,6 @@ void Host::UpdateMap(float x, float y, float orien,
         }
         map_mutex.unlock();
     }
-    //std::cout<<std::endl;
 
     map_img_mutex.lock();
     if(from_num==0){
@@ -214,10 +190,7 @@ void Host::UpdateMap(float x, float y, float orien,
             cv::circle(map_img, cv::Point2f(biasX+lastX1*mapping_params.mapRes, biasY+lastY1*mapping_params.mapRes)
                , 10, traj_color, 6);
     map_img_mutex.unlock();
-
-    //cv::imshow("Map", map_img);
-    //cv::imshow("Lidar", lidar_img);
-    //cv::waitKey(5);
+*/
 
 }
 
@@ -255,10 +228,14 @@ void Host::ReadData0(){
             in>>data[i];
         }
 
-        qDebug()<<"Receive message from "<<from_num<<" message type "<<message_type<<",timestamp "<<timestamp
-               <<", message size is "<<block0_size<<", x "<<x<<", y "<<y<<", ori "<<orien
-               <<" data size "<<size<<" bytesAvailable "<<socket0->bytesAvailable();
-        UpdateMap(x, y, orien, size, from_num, data);
+        qDebug()<<"Timestamp "<<timestamp<<" received from "<<from_num<<" message type "<<message_type
+               <<", message size is "<<block0_size<<", x "<<x<<", y "<<y<<", ori "<<orien;
+               //<<" data size "<<size<<" bytesAvailable "<<socket0->bytesAvailable();
+        //UpdateMap(x, y, orien, size, from_num, data);
+        if(!calcu_thread0->isRunning()){
+            calcu_thread0->setMessage(x, y, orien, size, data, timestamp);
+            calcu_thread0->start();
+        }
         //delete data;
 
     }
@@ -303,10 +280,14 @@ void Host::ReadData1(){
             in>>data[i];
         }
 
-        qDebug()<<"Receive message from "<<from_num<<" message type "<<message_type<<",timestamp "<<timestamp
-               <<", message size is "<<block1_size<<", x "<<x<<", y "<<y<<", ori "<<orien
-               <<" data size "<<size<<" bytesAvailable "<<socket1->bytesAvailable();
+        qDebug()<<"Timestamp "<<timestamp<<" received from "<<from_num
+               <<", message size is "<<block0_size<<", x "<<x<<", y "<<y<<", ori "<<orien;
+               //<<" data size "<<size<<" bytesAvailable "<<socket0->bytesAvailable();
         //UpdateMap(x, y, orien, size, from_num, data);
+        if(!calcu_thread1->isRunning()){
+            calcu_thread1->setMessage(x, y, orien, size, data, timestamp);
+            calcu_thread1->start();
+        }
         //delete data;
 
     }
@@ -314,4 +295,6 @@ void Host::ReadData1(){
         qDebug()<<"Message type not 0";
     }
     block1_size = 0;
+    cv::imshow("123", map_img->map_img);
+    cv::waitKey(2000);
 }

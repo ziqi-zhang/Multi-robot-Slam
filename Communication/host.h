@@ -6,9 +6,10 @@
 #include <QMutex>
 #include "Tcp.h"
 #include "Simulator_Sensor_laser_ParamsData.h"
-#include "VisualizationMulti_Show_LocationAndMap_ParamsData.h"
+//#include "VisualizationMulti_Show_LocationAndMap_ParamsData.h"
 #include "Bresenham.h"
-#include "drawer.h"
+#include "mapimg.h"
+#include "calcuthread.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/core/mat.hpp>
@@ -20,9 +21,22 @@ class Host : public QObject
 {
     Q_OBJECT
 public:
-    cv::Mat traj_map_img, map_img, lidar_img1, lidar_img0;
-    Drawer* drawer;
+
+    CalcuThread* calcu_thread0, *calcu_thread1;
+    MapImg* map_img;
     QThread* workerThread;
+    QTcpServer* server0, *server1;
+    QTcpSocket* socket0, *socket1;
+    quint32 messaga_type;
+    Network* network;
+    Simulator_Sensor_laser_Params laser_params;
+    //VisualizationMulti_Show_LocationAndMap_Params mapping_params;
+    float lastX0, lastY0, lastX1, lastY1, biasX, biasY, lidar_biasX, lidar_biasY;
+    quint16 block0_size, block1_size;
+    int init_num0, init_num1;
+    int height, width, lidar_height, lidar_width;
+    QMutex map_mutex, map_img_mutex;
+
     explicit Host(QObject *parent = 0, Network* network_=NULL);
     ~Host();
 
@@ -38,18 +52,7 @@ public slots:
                    const int size, const quint32 from_num, const short* data);
 
 private:
-    QTcpServer* server0, *server1;
-    QTcpSocket* socket0, *socket1;
-    quint32 messaga_type;
-    Network* network;
-    Simulator_Sensor_laser_Params laser_params;
-    VisualizationMulti_Show_LocationAndMap_Params mapping_params;
-    float lastX0, lastY0, lastX1, lastY1, biasX, biasY, lidar_biasX, lidar_biasY;
-    quint16 block0_size, block1_size;
-    int height, width, lidar_height, lidar_width;
-    float **map;
-    bool init;
-    QMutex map_mutex, map_img_mutex;
+
 };
 
 #endif // HOST_H

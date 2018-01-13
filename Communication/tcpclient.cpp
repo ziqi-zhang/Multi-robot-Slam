@@ -65,7 +65,7 @@ void TcpClient::SendMessageToHost(float x, float y, float ori, SensorTimer_Senso
     //socket_host->waitForBytesWritten();
     //printf("Send to host %d bytes\n", message.size());
     std::cout<<"Send to host "<<message.size()<<" bytes "<<"timestamp "<<timestamp
-            <<" x "<<x<<" y "<<y<<std::endl;
+            <<" x "<<x<<" y "<<y<<" ori "<<ori<<std::endl;
     socket_host->disconnectFromHost();
 }
 
